@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Examples · ACS.jl</title><meta name="title" content="Examples · ACS.jl"/><meta property="og:title" content="Examples · ACS.jl"/><meta property="twitter:title" content="Examples · ACS.jl"/><meta name="description" content="Documentation for ACS.jl."/><meta property="og:description" content="Documentation for ACS.jl."/><meta property="twitter:description" content="Documentation for ACS.jl."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">ACS.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../api/functions/">API Functions</a></li><li class="is-active"><a class="tocitem" href>Examples</a><ul class="internal"><li><a class="tocitem" href="#Basic-Usage"><span>Basic Usage</span></a></li><li><a class="tocitem" href="#Geographic-Levels"><span>Geographic Levels</span></a></li><li><a class="tocitem" href="#Survey-Types"><span>Survey Types</span></a></li><li><a class="tocitem" href="#Error-Handling"><span>Error Handling</span></a></li></ul></li><li><a class="tocitem" href="../contributing/">Contributing</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Examples</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Examples</a></li></ul></nav><div class="docs-right"><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Examples"><a class="docs-heading-anchor" href="#Examples">Examples</a><a id="Examples-1"></a><a class="docs-heading-anchor-permalink" href="#Examples" title="Permalink"></a></h1><h2 id="Basic-Usage"><a class="docs-heading-anchor" href="#Basic-Usage">Basic Usage</a><a id="Basic-Usage-1"></a><a class="docs-heading-anchor-permalink" href="#Basic-Usage" title="Permalink"></a></h2><h3 id="Getting-Population-Estimates"><a class="docs-heading-anchor" href="#Getting-Population-Estimates">Getting Population Estimates</a><a id="Getting-Population-Estimates-1"></a><a class="docs-heading-anchor-permalink" href="#Getting-Population-Estimates" title="Permalink"></a></h3><pre><code class="language-julia hljs">using ACS
+
+# Get total population for all states using 5-year estimates
+df = get_acs(
+    variables = [&quot;B01003_001E&quot;],
+    geography = &quot;state&quot;
+)
+
+# Get population and median household income
+df = get_acs(
+    variables = [&quot;B01003_001E&quot;, &quot;B19013_001E&quot;],
+    geography = &quot;state&quot;
+)</code></pre><h3 id="Working-with-Margins-of-Error"><a class="docs-heading-anchor" href="#Working-with-Margins-of-Error">Working with Margins of Error</a><a id="Working-with-Margins-of-Error-1"></a><a class="docs-heading-anchor-permalink" href="#Working-with-Margins-of-Error" title="Permalink"></a></h3><pre><code class="language-julia hljs"># Get MOE for total population
+df_moe = get_acs_moe(
+    variables = [&quot;B01003_001M&quot;],
+    geography = &quot;state&quot;
+)</code></pre><h2 id="Geographic-Levels"><a class="docs-heading-anchor" href="#Geographic-Levels">Geographic Levels</a><a id="Geographic-Levels-1"></a><a class="docs-heading-anchor-permalink" href="#Geographic-Levels" title="Permalink"></a></h2><h3 id="State-Level"><a class="docs-heading-anchor" href="#State-Level">State Level</a><a id="State-Level-1"></a><a class="docs-heading-anchor-permalink" href="#State-Level" title="Permalink"></a></h3><pre><code class="language-julia hljs"># Get state-level data
+df = get_acs(
+    variables = [&quot;B01003_001E&quot;],
+    geography = &quot;state&quot;
+)</code></pre><h3 id="County-Level"><a class="docs-heading-anchor" href="#County-Level">County Level</a><a id="County-Level-1"></a><a class="docs-heading-anchor-permalink" href="#County-Level" title="Permalink"></a></h3><pre><code class="language-julia hljs"># Get all counties in California
+df = get_acs(
+    variables = [&quot;B01003_001E&quot;],
+    geography = &quot;county&quot;,
+    state = &quot;CA&quot;
+)</code></pre><h3 id="Census-Tract-Level"><a class="docs-heading-anchor" href="#Census-Tract-Level">Census Tract Level</a><a id="Census-Tract-Level-1"></a><a class="docs-heading-anchor-permalink" href="#Census-Tract-Level" title="Permalink"></a></h3><pre><code class="language-julia hljs"># Get all tracts in a specific county
+df = get_acs(
+    variables = [&quot;B01003_001E&quot;],
+    geography = &quot;tract&quot;,
+    state = &quot;CA&quot;,
+    county = &quot;001&quot;  # Alameda County
+)</code></pre><h2 id="Survey-Types"><a class="docs-heading-anchor" href="#Survey-Types">Survey Types</a><a id="Survey-Types-1"></a><a class="docs-heading-anchor-permalink" href="#Survey-Types" title="Permalink"></a></h2><h3 id="1-Year-Estimates"><a class="docs-heading-anchor" href="#1-Year-Estimates">1-Year Estimates</a><a id="1-Year-Estimates-1"></a><a class="docs-heading-anchor-permalink" href="#1-Year-Estimates" title="Permalink"></a></h3><pre><code class="language-julia hljs"># Get 1-year estimates (65,000+ population areas only)
+df = get_acs(
+    variables = [&quot;B01003_001E&quot;],
+    geography = &quot;state&quot;,
+    survey = &quot;acs1&quot;
+)</code></pre><h3 id="3-Year-Estimates"><a class="docs-heading-anchor" href="#3-Year-Estimates">3-Year Estimates</a><a id="3-Year-Estimates-1"></a><a class="docs-heading-anchor-permalink" href="#3-Year-Estimates" title="Permalink"></a></h3><pre><code class="language-julia hljs"># Get 3-year estimates from 2013 (20,000+ population areas)
+df = get_acs(
+    variables = [&quot;B01003_001E&quot;],
+    geography = &quot;state&quot;,
+    year = 2013,
+    survey = &quot;acs3&quot;
+)</code></pre><h3 id="5-Year-Estimates"><a class="docs-heading-anchor" href="#5-Year-Estimates">5-Year Estimates</a><a id="5-Year-Estimates-1"></a><a class="docs-heading-anchor-permalink" href="#5-Year-Estimates" title="Permalink"></a></h3><pre><code class="language-julia hljs"># Get 5-year estimates (all areas)
+df = get_acs(
+    variables = [&quot;B01003_001E&quot;],
+    geography = &quot;state&quot;,
+    survey = &quot;acs5&quot;
+)</code></pre><h2 id="Error-Handling"><a class="docs-heading-anchor" href="#Error-Handling">Error Handling</a><a id="Error-Handling-1"></a><a class="docs-heading-anchor-permalink" href="#Error-Handling" title="Permalink"></a></h2><p>The package includes robust error handling for common scenarios:</p><pre><code class="language-julia hljs"># Invalid year for 3-year estimates
+try
+    df = get_acs(
+        variables = [&quot;B01003_001E&quot;],
+        geography = &quot;state&quot;,
+        year = 2020,
+        survey = &quot;acs3&quot;
+    )
+catch e
+    println(&quot;Error: &quot;, e)
+end
+
+# Invalid geography level
+try
+    df = get_acs(
+        variables = [&quot;B01003_001E&quot;],
+        geography = &quot;invalid&quot;
+    )
+catch e
+    println(&quot;Error: &quot;, e)
+end</code></pre><pre><code class="nohighlight hljs"></code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../api/functions/">« API Functions</a><a class="docs-footer-nextpage" href="../contributing/">Contributing »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.10.0 on <span class="colophon-date" title="Monday 31 March 2025 22:24">Monday 31 March 2025</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
