@@ -1,0 +1,124 @@
+---
+description: Cursor rules derived by SpecStory from the project AI interaction history
+globs: *
+---
+
+## PROJECT OVERVIEW
+ACS.jl is a Julia package for accessing and processing data from the American Community Survey (ACS).  This document outlines the project's coding standards, workflow, and best practices.
+
+## CODE STYLE
+Adhere to Julia's style guide.  Maintain consistent indentation and spacing.
+
+## FOLDER ORGANIZATION
+The project follows a standard structure:
+
+- `src/`: Contains the Julia source code.
+- `docs/`: Contains the project documentation.
+- `test/`:  (To be added)  Will contain unit tests.
+
+
+## TECH STACK
+- Julia
+- HTTP.jl
+- JSON3.jl
+- StructArrays.jl
+- NamedTupleTools.jl
+- DataFrames.jl
+- Downloads.jl
+- curl (added for robust HTTP requests)
+
+
+## PROJECT-SPECIFIC STANDARDS
+- All functions should have comprehensive docstrings.
+- Error handling should be robust and informative.
+- The `process_census_response` function now supports DataFrame, StructArray, Vector{NamedTuple}, and NamedTuple{Vector} output types.  The `get_acs`, `get_acs1`, `get_acs3`, and `get_acs5` functions now accept an `output_type` parameter to specify the desired output type (DataFrame, StructArray, Vector{NamedTuple}, or NamedTuple{Vector}).  See examples below for usage.
+- The `get_acs` functions are now refactored to separate data fetching from data transformation. A new function `fetch_census_data` retrieves the raw JSON data, and separate functions handle the conversion to different output types (DataFrame, StructArray, Vector{NamedTuple}, or NamedTuple{Vector}).  This improves modularity and maintainability.
+
+## WORKFLOW & RELEASE RULES
+- Use Git for version control.
+- Follow semantic versioning for releases.
+- All changes must be documented and reviewed before merging.
+- Address precompilation issues by ensuring correct path configuration in the main module file (`ACS.jl`). Use relative paths for including helper functions within the module.  Use `include(joinpath(@__DIR__, "utils.jl"))`, `include(joinpath(@__DIR__, "api.jl"))`, `include(joinpath(@__DIR__, "estimates.jl"))`, and `include(joinpath(@__DIR__, "moe.jl"))` within the main module file (`ACS.jl`) to include helper functions. Avoid using absolute paths or constants like `SRC_DIR`.  When using `Pkg.develop`, ensure that the package is not already the active project. Exit the Julia session completely before running `Pkg.develop` to avoid conflicts.  Activate the project using `julia --project=.` before running `Pkg.add` to avoid dependency conflicts. Add packages one at a time with version constraints specified in `Project.toml` to manage dependency conflicts effectively.
+- To avoid "package 'ACS [...]' has the same name or UUID as the active project" error during `Pkg.develop`, exit the Julia session completely before running `Pkg.develop` again. Use `julia --project=.` to activate the project before running `Pkg.add` to avoid dependency conflicts. Add packages one at a time, specifying version constraints in `Project.toml`.
+- When adding packages, use `julia --project=. -e 'using Pkg; Pkg.activate("."); Pkg.add("PackageName@Version")'` to ensure correct version and avoid conflicts. Add packages individually to manage dependencies effectively.
+- Always activate the project using `julia --project=.` before running `Pkg.add` or `Pkg.develop`. Add packages individually with version constraints specified in `Project.toml` to avoid conflicts. Use `julia --project=. -e 'using Pkg; Pkg.activate("."); Pkg.add("PackageName@Version")'` to add packages with version constraints, ensuring correct versions and avoiding conflicts.
+- To manage dependencies effectively, add packages individually using `julia --project=. -e 'using Pkg; Pkg.activate("."); Pkg.add("PackageName@Version")'`.  Specify version constraints in `Project.toml` to avoid conflicts. Before running `Pkg.develop`, ensure the package is not the active project. Exit the Julia session completely before running `Pkg.develop`. Use `julia --project=.` before running `Pkg.add`.
+- To resolve HTTP request timeouts, increase the `readtimeout` and `connecttimeout` parameters in the `make_census_request` function. Implement exponential backoff with jitter for retries to prevent thundering herd.  Use `Downloads.jl` or `curl` for more robust HTTP requests. Always activate the project before adding or developing packages.
+
+
+## REFERENCE EXAMPLES
+See the `docs/src/examples.md` file for usage examples.  Updated examples should include demonstrations of using StructArrays, Vector{NamedTuple}, and NamedTuple{Vector} as output types.  See examples below for usage.
+
+```julia
+using ACS
+
+# Define common parameters
+variables = [
+    "B01003_001E",  # Total population
+    "B19013_001E"   # Median household income
+]
+
+# 1. DataFrame (default) output
+df = get_acs(
+    variables = variables,
+    geography = "state",
+    year = 2022,
+    survey = "acs5"
+)
+
+# 2. StructArray output
+sa = get_acs(
+    variables = variables,
+    geography = "state",
+    year = 2022,
+    survey = "acs5",
+    output_type = :structarray
+)
+
+# 3. Vector{NamedTuple} output
+nts = get_acs(
+    variables = variables,
+    geography = "state",
+    year = 2022,
+    survey = "acs5",
+    output_type = :namedtuples
+)
+
+# 4. NamedTuple{Vector} output
+ntv = get_acs(
+    variables = variables,
+    geography = "state",
+    year = 2022,
+    survey = "acs5",
+    output_type = :columnar
+)
+```
+
+## PROJECT DOCUMENTATION & CONTEXT SYSTEM
+Documentation is generated using [documentation generator name - to be added].  The documentation is located in the `docs/` folder.  Version updates will be noted in the `docs/` folder's `README.md` file.  Version 1.0 incorporates support for StructArrays, Vector{NamedTuple}, and NamedTuple{Vector} output types.  Version 1.1 includes improved error handling and example updates.  Version 1.2 includes enhanced examples demonstrating the use of different output types.  Version 1.3 includes updated examples demonstrating all four output types.  Version 1.4 includes comprehensive examples demonstrating all four output types with various ACS variables.  Version 1.5 includes updated examples with improved string interpolation and error handling. Version 1.6 includes comprehensive examples demonstrating all four output types with various ACS variables and improved error handling and string interpolation. Version 1.7 includes comprehensive examples demonstrating all four output types with various ACS variables and improved error handling, string interpolation and fixed string formatting. Version 1.8 includes comprehensive examples demonstrating all four output types with various ACS variables and improved error handling, string interpolation, fixed string formatting, and updated examples for clarity. Version 1.9 includes comprehensive examples demonstrating all four output types with various ACS variables and improved error handling, string interpolation, fixed string formatting, and updated examples for clarity and addresses issues with string interpolation and number formatting. Version 2.0 includes comprehensive examples demonstrating all four output types with various ACS variables and improved error handling, string interpolation, fixed string formatting, updated examples for clarity, and addresses issues with string interpolation and number formatting, and improved error handling and string interpolation. Version 2.1 includes comprehensive examples demonstrating all four output types with various ACS variables and improved error handling, string interpolation, fixed string formatting, updated examples for clarity, addresses issues with string interpolation and number formatting, improved error handling and string interpolation, and fixed string formatting issues.  Version 2.2 includes updated examples with improved string interpolation and error handling, addressing issues raised in user interactions.  Version 2.3 includes comprehensive examples demonstrating all four output types with various ACS variables and improved error handling, string interpolation, fixed string formatting, updated examples for clarity, addresses issues with string interpolation and number formatting, improved error handling and string interpolation, and fixed string formatting issues, along with improved error handling and string interpolation. Version 2.4 includes comprehensive examples demonstrating all four output types with various ACS variables and improved error handling, string interpolation, fixed string formatting, updated examples for clarity, addresses issues with string interpolation and number formatting, improved error handling and string interpolation, fixed string formatting issues, and incorporates fixes for string interpolation and number formatting issues. Version 2.5 includes updated examples with improved string interpolation and error handling, and clarifies the use of each output type. Version 2.6 includes updated examples with improved string interpolation, error handling, and clarity, addressing user feedback and incorporating best practices for data handling with StructArrays, Vector{NamedTuple}, and NamedTuple{Vector}. Version 2.7 includes comprehensive examples demonstrating all four output types with various ACS variables and improved error handling, string interpolation, fixed string formatting, and updated examples for clarity and addresses issues with string interpolation and number formatting.  Version 2.8 Addresses Census API key setup and request timeouts.  Before running examples, ensure a valid Census API key is set using `export CENSUS_API_KEY="your-api-key-here"`  or by setting the environment variable directly in the current session. Version 2.9 Includes refactored `get_acs` functions for improved modularity.  Data fetching is now handled by `fetch_census_data`, with separate functions for data transformation to different output types. Version 2.10 Addresses issues with string interpolation and number formatting, improving clarity and robustness. Version 2.11 Uses `Downloads.jl` for more robust HTTP requests. Version 2.12 Uses `curl` for more robust HTTP requests and handles JSON3.Array directly.
+
+
+## DEBUGGING
+Standard Julia debugging techniques should be used.  Address precompilation errors by using relative paths for including helper functions in the main module file (`ACS.jl`). To resolve precompilation issues, ensure that all included files are present in the `src` directory and that the paths to these files are correctly specified within the `ACS.jl` module file using relative paths (e.g., `include(joinpath(@__DIR__,"utils.jl"))`). Avoid using absolute paths or constants like `SRC_DIR`.  Ensure that the `ACS.jl` module file correctly includes helper functions using relative paths. Avoid absolute paths or `SRC_DIR` constants for enhanced portability and maintainability. To avoid errors when using `Pkg.develop`, ensure the package is not already the active project; exit the Julia session completely before running `Pkg.develop`. To avoid `Pkg.develop` errors, ensure the package isn't the active project. Exit the Julia session completely before running `Pkg.develop`. Use `julia --project=.` to activate the project before installing packages to avoid dependency conflicts. Add packages individually with version constraints specified in `Project.toml` to effectively manage dependencies.  When encountering "package 'ACS [...]' has the same name or UUID as the active project" error during `Pkg.develop`, exit the Julia session completely before running `Pkg.develop` again.  Use `julia --project=.` to activate the project before running `Pkg.add` to avoid dependency conflicts. Add packages one at a time, specifying version constraints in `Project.toml`.  To resolve precompilation issues, ensure that helper functions are included using relative paths from within the `src` directory (e.g., `include(joinpath(@__DIR__, "utils.jl"))`). Avoid absolute paths or constants like `SRC_DIR`.  Ensure the package is not the active project before running `Pkg.develop`. Use `julia --project=.` to activate before `Pkg.add`. Add packages individually with version constraints in `Project.toml`.  To resolve precompilation issues, ensure that helper functions are included using relative paths from within the `src` directory (e.g., `include(joinpath(@__DIR__, "utils.jl"))`). Avoid absolute paths or constants. Exit the Julia session completely before running `Pkg.develop`. Use `julia --project=.` to activate before `Pkg.add`. Add packages individually with version constraints specified in `Project.toml`.  To resolve HTTP request timeouts, increase the `readtimeout` and `connecttimeout` parameters in the `make_census_request` function. Implement exponential backoff with jitter for retries to prevent thundering herd. To resolve precompilation issues, ensure helper functions are included using `include(joinpath(@__DIR__, "utils.jl"))` within the main module file (`ACS.jl`). Avoid absolute paths or constants.  To handle potential timeouts more robustly, consider using `Downloads.jl` or `curl`.  To resolve precompilation issues, ensure that the included files (`utils.jl`, `api.jl`, `estimates.jl`, `moe.jl`) are located in the `src` directory and included using relative paths (e.g., `include("utils.jl")`). Avoid using absolute paths or constants.  To avoid "package 'ACS [...]' has the same name or UUID as the active project" error during `Pkg.develop`, exit the Julia session completely before running `Pkg.develop`. Use `julia --project=.` before `Pkg.add`. Add packages individually, specifying version constraints in `Project.toml`.  Ensure that all included files are in the `src/` directory and are included using relative paths (e.g., `include("utils.jl")` from within `src/ACS.jl`). Avoid absolute paths or constants.  Before using `Pkg.develop()`, ensure that the project is not already activated. Exit the Julia session completely, then use `julia --project=.` to activate the project before running `Pkg.develop(.)`. Add packages one by one, specifying version constraints in `Project.toml` to manage dependencies effectively.  To resolve HTTP request timeouts, use `Downloads.jl` or `curl` for more robust handling. Implement exponential backoff with jitter for retries. Always activate the project before adding or developing packages.  Ensure that helper functions are included using `include(joinpath(@__DIR__, "utils.jl"))`, `include(joinpath(@__DIR__, "api.jl"))`, `include(joinpath(@__DIR__, "estimates.jl"))`, and `include(joinpath(@__DIR__, "moe.jl"))` within the main module file. Avoid using absolute paths or constants like `SRC_DIR`.  Always ensure that the `CENSUS_API_KEY` environment variable is set before running any Census API requests.  Ensure that the `ACS.jl` file includes helper functions using `include(joinpath(@__DIR__, "utils.jl"))`, `include(joinpath(@__DIR__, "api.jl"))`, `include(joinpath(@__DIR__, "estimates.jl"))`, and `include(joinpath(@__DIR__, "moe.jl"))`.  Avoid using absolute paths or constants like `SRC_DIR`.  Always ensure that the `CENSUS_API_KEY` environment variable is set before running any Census API requests. Always ensure that the `CENSUS_API_KEY` environment variable is set before running any Census API requests.  Ensure that the API key is correctly set in the environment before running any Census API requests.  If using `curl`, ensure that the API key is correctly included in the URL.  Always activate the project environment before running any code.  Ensure the CENSUS_API_KEY environment variable is set properly.  The API key must be included in the URL for all requests.  Always activate the project using `julia --project=.` before running any code.  Ensure that the `CENSUS_API_KEY` environment variable is set before running any code.  Always activate the project environment before running any code.  Always ensure that the `CENSUS_API_KEY` environment variable is set before running any Census API requests.
+
+
+## FINAL DOs AND DON'Ts
+- **DO** write clear, concise, and well-documented code.
+- **DO** use meaningful variable and function names.
+- **DO** test your code thoroughly.
+- **DO** utilize the new output type parameter in `get_acs` functions for flexibility.  Use symbols (:dataframe, :structarray, :namedtuples, :columnar) for specifying output types.
+- **DON'T** commit broken code.
+- **DON'T** ignore warnings or errors.
+- **DO** use `Pkg.add("StructArrays")`, `Pkg.add("NamedTupleTools")`, `Pkg.add("Downloads")`, and `Pkg.add("HTTP")` to install necessary packages.  Ensure compatibility versions are specified in `Project.toml`.
+- **DO** utilize `DataFrame`, `StructArray`, `Vector{NamedTuple}`, and `NamedTuple{Vector}` output types for flexibility in data handling.  Consider the strengths of each type for different analytical tasks.
+- **DO** refer to the updated examples for usage demonstrations of each output type.
+- **DO** ensure that all included files are present in the `src` directory and that the paths to these files are correctly specified within the `ACS.jl` module file. Use relative paths for including helper functions.
+- **DO** Use relative paths (`include(joinpath(@__DIR__, "utils.jl"))`) within the main module file for including helper functions to avoid path resolution issues.
+- **DO**  Ensure that the `ACS.jl` module file correctly includes helper functions using relative paths. Avoid absolute paths or `SRC_DIR` constants for enhanced portability and maintainability.
+- **DO** When using `Pkg.develop`, ensure the package is not already the active project. Exit the Julia session completely before running `Pkg.develop`.
+- **DO** Activate the project using `julia --project=.` before running `Pkg.add` to avoid dependency conflicts. Add packages one at a time with version constraints specified in `Project.toml`.
+- **DO**  When adding packages, use `julia --project=. -e 'using Pkg; Pkg.activate("."); Pkg.add("PackageName@Version")'` to ensure correct version and avoid conflicts. Add packages individually to manage dependencies effectively.
+- **DO** Before running examples, ensure a valid Census API key is set using `export CENSUS_API_KEY="your-api-key-here"` or by setting the environment variable directly in the current session.
+- **DO** When adding packages, use `julia --project=. -e 'using Pkg; Pkg.activate("."); Pkg.add("PackageName@Version")'` to ensure correct version and avoid conflicts. Add packages individually to manage dependencies effectively.  Before running `Pkg.develop`, ensure the package is not already active. Exit the Julia session completely before running `Pkg.develop`. Use `julia --project=.` before `Pkg.add`. Add packages individually, specifying version constraints in `Project.toml`.
+- **DO** Use `julia --project=. -e 'using Pkg; Pkg.activate("."); Pkg.add("PackageName@Version")'` to add packages with version constraints, avoiding conflicts.  Always activate the project before adding or developing packages.
+- **DO** For robust error handling and to prevent thundering herd issues with the Census API, implement exponential backoff with jitter for retries. Increase the `readtimeout` and `connecttimeout` values to handle slow responses.  Always activate the project before adding or developing packages. Use `Downloads.jl` or `curl` for more robust HTTP requests.  Always activate the project using `julia --project=.` before installing or developing packages. Add packages individually with version constraints specified in `Project.toml` to avoid dependency conflicts. Use `julia --project=. -e 'using Pkg; Pkg.activate("."); Pkg.add("PackageName@Version")'` to add packages with version constraints, ensuring correct versions and avoiding conflicts.  Before running `Pkg.develop`, ensure the package is not already active. Exit the Julia session completely before running `Pkg.develop`. Use `julia --project=.` before `Pkg.add`. Add packages individually, specifying version constraints in `Project.toml`.  For robust error handling, implement exponential backoff with jitter for retries. Increase the `readtimeout` and `connecttimeout` values to handle slow responses. Use `Downloads.jl` or `curl` for more robust HTTP requests.  Ensure that all included files are in the `src/` directory and included using relative paths (e.g., `include("utils.jl")` from within `src/ACS.jl`). Avoid absolute paths or constants.  Always activate the project before installing or developing packages. Use `julia --project=. -e 'using Pkg; Pkg.activate("."); Pkg.add("PackageName@Version")'` to add packages with version constraints, ensuring correct versions and avoiding conflicts. Before running `Pkg.develop`, ensure the package is not already active. Exit the Julia session completely before running `Pkg.develop`. Use `julia --project=.` before `Pkg.add`. Add packages individually, specifying version constraints in `Project.toml`.  Before running `Pkg.develop()`, ensure that the project is not already activated. Exit the Julia session completely, then use `julia --project=.` to activate the project before running `Pkg.develop(.)`. Add packages one by one, specifying version constraints in `Project.toml` to manage dependencies effectively.  Always ensure the CENSUS_API_KEY environment variable is set before running any Census API requests.  Ensure that the `ACS.jl` file includes helper functions using `include(joinpath(@__DIR__, "utils.jl"))`, `include(joinpath(@__DIR__, "api.jl"))`, `include(joinpath(@__DIR__, "estimates.jl"))`, and `include(joinpath(@__DIR__, "moe.jl"))`.  Avoid using absolute paths or constants like `SRC_DIR`.  Always ensure that the `CENSUS_API_KEY` environment variable is set before running any Census API requests.  Always ensure that the `CENSUS_API_KEY` environment variable is set before running any Census API requests.

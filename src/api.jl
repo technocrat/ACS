@@ -1,36 +1,103 @@
 # Census API interaction functions
+using Downloads
+using HTTP
+using JSON3
 
 """
-    make_census_request(url::String, headers::Vector{Pair{String,String}}) -> HTTP.Response
+    make_census_request(url::String, headers::Vector{Pair{String,String}}) -> JSON3.Array
 
-Make a request to the Census API with robust error handling and retries.
+Make a request to the Census API and return the raw JSON response.
 """
 function make_census_request(url::String, headers::Vector{Pair{String,String}})
-    # Set up retry parameters
+    try
+        # Build curl command with headers
+        header_args = []
+        for (k, v) in headers
+            push!(header_args, "-H")
+            push!(header_args, "$k: $v")
+        end
+        
+        cmd = `curl -s -L --max-time 180 $header_args $url`
+        
+        # Run curl and capture output
+        output = read(cmd, String)
+        
+        # Parse and return the raw JSON
+        data = JSON3.read(output)
+        
+        if length(data) < 2
+            @warn "No data returned from Census API"
+            return nothing
+        end
+        
+        return data
+    catch e
+        if e isa ProcessFailedException
+            error("Census API request failed: $(e.msg)")
+        else
+            rethrow(e)
+        end
+    end
+end
+
+"""
+    fetch_census_data(;
+        variables::Vector{String},
+        geography::String,
+        year::Int,
+        survey::String,
+        state::Union{String,Nothing} = nothing,
+        county::Union{String,Nothing} = nothing
+    ) -> JSON3.Array
+
+Fetch raw data from the Census API. Returns the JSON response directly.
+"""
+function fetch_census_data(;
+    variables::Vector{String},
+    geography::String,
+    year::Int,
+    survey::String,
+    state::Union{String,Nothing} = nothing,
+    county::Union{String,Nothing} = nothing
+)
+    url = build_census_url(;
+        variables=variables,
+        geography=geography,
+        year=year,
+        survey=survey,
+        state=state,
+        county=county
+    )
+    
+    headers = [
+        "Accept" => "application/json",
+        "User-Agent" => "ACS.jl/0.1.0"
+    ]
+    
+    # Try up to 3 times with exponential backoff
     max_retries = 3
-    base_delay = 1.0  # seconds
+    base_delay = 2.0  # seconds
     
     for attempt in 1:max_retries
         try
-            return HTTP.get(
-                url,
-                headers;
-                retry = false,
-                readtimeout = 180,  # 3 minutes
-                connecttimeout = 60  # 1 minute
-            )
+            data = make_census_request(url, headers)
+            if !isnothing(data)
+                return data
+            end
         catch e
             if attempt == max_retries
                 @error "Failed to fetch Census data after $max_retries attempts" exception=e
-                rethrow(e)
+                return JSON3.Array([])
             end
             
-            # Exponential backoff
-            sleep(base_delay * 2^(attempt - 1))
-            
+            # Add some jitter to prevent thundering herd
+            jitter = rand() * base_delay
+            sleep(base_delay * 2^(attempt - 1) + jitter)
             @warn "Retrying Census API request (attempt $attempt of $max_retries)"
         end
     end
+    
+    return JSON3.Array([])
 end
 
 """
@@ -76,47 +143,100 @@ function build_census_url(;
         end
     end
     
-    # Add API key if available
+    # Add API key - required for all requests
     api_key = get(ENV, "CENSUS_API_KEY", nothing)
-    if !isnothing(api_key)
-        push!(params, "key=$(api_key)")
+    if isnothing(api_key)
+        error("Census API key not found in environment. Please set the CENSUS_API_KEY environment variable.")
     end
+    push!(params, "key=$(api_key)")
     
     # Construct final URL
     return base_url * "?" * join(params, "&")
 end
 
 """
-    process_census_response(r::HTTP.Response, geography::String) -> DataFrame
+    as_dataframe(data::JSON3.Array) -> DataFrame
 
-Process a Census API response into a DataFrame.
+Convert Census API JSON data to a DataFrame.
 """
-function process_census_response(r::HTTP.Response, geography::String)
-    # Parse response
-    data = JSON3.read(String(r.body))
+function as_dataframe(data::JSON3.Array)
+    isempty(data) && return DataFrame()
     
-    # Check if we got any data
-    if length(data) < 2
-        @warn "No data returned from Census API"
-        return DataFrame()
+    # Convert each row to a vector
+    rows = [[x for x in row] for row in data]
+    headers = rows[1]
+    data_rows = rows[2:end]
+    
+    # Create a dictionary of columns
+    cols = Dict{Symbol,Vector{String}}()
+    for (i, header) in enumerate(headers)
+        cols[Symbol(header)] = [row[i] for row in data_rows]
     end
     
-    # First row contains column names
-    col_names = String.(data[1])
+    # Create DataFrame from columns
+    return DataFrame(cols)
+end
+
+"""
+    as_structarray(data::JSON3.Array) -> StructArray
+
+Convert Census API JSON data to a StructArray.
+"""
+function as_structarray(data::JSON3.Array)
+    isempty(data) && return StructArray()
     
-    # Create DataFrame with proper column types
-    df = DataFrame([name => [] for name in col_names])
+    # Convert each row to a vector
+    rows = [[x for x in row] for row in data]
+    headers = rows[1]
+    data_rows = rows[2:end]
     
-    # Add data rows
-    for row in data[2:end]
-        push!(df, row)
+    # Create a dictionary of columns
+    cols = Dict{Symbol,Vector{String}}()
+    for (i, header) in enumerate(headers)
+        cols[Symbol(header)] = [row[i] for row in data_rows]
     end
     
-    # Create GEOID
-    df.GEOID = create_geoid(df, geography)
+    # Create StructArray from columns
+    return StructArray(cols)
+end
+
+"""
+    as_namedtuples(data::JSON3.Array) -> Vector{NamedTuple}
+
+Convert Census API JSON data to a Vector of NamedTuples.
+"""
+function as_namedtuples(data::JSON3.Array)
+    isempty(data) && return Vector{NamedTuple}()
     
-    # Sort by GEOID
-    sort!(df, :GEOID)
+    # Convert each row to a vector
+    rows = [[x for x in row] for row in data]
+    headers = Symbol.(rows[1])
+    data_rows = rows[2:end]
     
-    return df
+    # Create NamedTuples from rows
+    NT = NamedTuple{Tuple(headers)}
+    return [NT(Tuple(row)) for row in data_rows]
+end
+
+"""
+    as_columnar(data::JSON3.Array) -> NamedTuple{Vector}
+
+Convert Census API JSON data to a NamedTuple of Vectors (columnar format).
+"""
+function as_columnar(data::JSON3.Array)
+    isempty(data) && return NamedTuple()
+    
+    # Convert each row to a vector
+    rows = [[x for x in row] for row in data]
+    headers = rows[1]
+    data_rows = rows[2:end]
+    
+    # Create a dictionary of columns
+    cols = Dict{Symbol,Vector{String}}()
+    for (i, header) in enumerate(headers)
+        cols[Symbol(header)] = [row[i] for row in data_rows]
+    end
+    
+    # Convert dictionary to NamedTuple
+    return NamedTuple{Tuple(Symbol.(keys(cols)))}(Tuple(values(cols)))
 end 

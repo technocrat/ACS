@@ -4,38 +4,48 @@
     get_acs5(;
         variables::Vector{String},
         geography::String,
-        year::Int = 2023,
+        year::Int = 2022,
         state::Union{String,Nothing} = nothing,
-        county::Union{String,Nothing} = nothing
-    ) -> DataFrame
+        county::Union{String,Nothing} = nothing,
+        output_type::Symbol = :dataframe
+    )
 
 Fetch estimates from American Community Survey 5-year estimates.
 
 # Arguments
 - `variables`: Vector of Census variable codes (must end with 'E' for estimates)
 - `geography`: Geographic level ("state", "county", "tract", "block group")
-- `year`: Survey year (default: 2023)
+- `year`: Survey year (default: 2022)
 - `state`: Optional state postal code or FIPS code
 - `county`: Optional county FIPS code (requires state)
+- `output_type`: Symbol indicating output type (:dataframe, :structarray, :namedtuples, or :columnar)
 
 # Returns
-DataFrame with requested Census data
+Data in the requested format
 
 # Example
 ```julia
-# Get total population for all states
+# Get total population for all states as a DataFrame
 df = get_acs5(
     variables = ["B01003_001E"],
     geography = "state"
+)
+
+# Get as a StructArray
+sa = get_acs5(
+    variables = ["B01003_001E"],
+    geography = "state",
+    output_type = :structarray
 )
 ```
 """
 function get_acs5(;
     variables::Vector{String},
     geography::String,
-    year::Int = 2023,
+    year::Int = 2022,
     state::Union{String,Nothing} = nothing,
-    county::Union{String,Nothing} = nothing
+    county::Union{String,Nothing} = nothing,
+    output_type::Symbol = :dataframe
 )
     # Validate inputs
     if isempty(variables)
@@ -59,9 +69,9 @@ function get_acs5(;
     if year < 2009
         throw(ArgumentError("5-year ACS support begins with 2009 (2005-2009 5-year ACS)"))
     end
-    
-    # Build URL
-    url = build_census_url(
+
+    # Fetch raw data
+    data = fetch_census_data(
         variables = variables,
         geography = geography,
         year = year,
@@ -69,20 +79,19 @@ function get_acs5(;
         state = state,
         county = county
     )
-    
-    # Make request with robust connection handling
-    headers = [
-        "Accept" => "application/json",
-        "Accept-Encoding" => "gzip, deflate, br",
-        "Accept-Language" => "en-US,en;q=0.9",
-        "Connection" => "keep-alive",
-        "User-Agent" => "ACS.jl/0.1.0"
-    ]
-    
-    r = make_census_request(url, headers)
-    
-    # Process response
-    return process_census_response(r, geography)
+
+    # Convert to requested output type
+    if output_type == :dataframe
+        return as_dataframe(data)
+    elseif output_type == :structarray
+        return as_structarray(data)
+    elseif output_type == :namedtuples
+        return as_namedtuples(data)
+    elseif output_type == :columnar
+        return as_columnar(data)
+    else
+        throw(ArgumentError("Invalid output_type: $output_type. Must be one of :dataframe, :structarray, :namedtuples, or :columnar"))
+    end
 end
 
 """
@@ -91,8 +100,9 @@ end
         geography::String,
         year::Int = 2022,
         state::Union{String,Nothing} = nothing,
-        county::Union{String,Nothing} = nothing
-    ) -> DataFrame
+        county::Union{String,Nothing} = nothing,
+        output_type::Type{T} = DataFrame
+    ) where T
 
 Fetch estimates from American Community Survey 1-year estimates.
 Only available for geographies with populations of 65,000 and greater.
@@ -103,16 +113,24 @@ Only available for geographies with populations of 65,000 and greater.
 - `year`: Survey year (default: 2023)
 - `state`: Optional state postal code or FIPS code
 - `county`: Optional county FIPS code (requires state)
+- `output_type`: Type of output (DataFrame, StructArray, Vector{NamedTuple}, or NamedTuple{Vector})
 
 # Returns
-DataFrame with requested Census data
+Data in the requested format
 
 # Example
 ```julia
-# Get total population for all states
+# Get total population for all states as a DataFrame
 df = get_acs1(
     variables = ["B01003_001E"],
     geography = "state"
+)
+
+# Get as a StructArray
+sa = get_acs1(
+    variables = ["B01003_001E"],
+    geography = "state",
+    output_type = StructArray
 )
 ```
 """
@@ -121,8 +139,9 @@ function get_acs1(;
     geography::String,
     year::Int = 2023,
     state::Union{String,Nothing} = nothing,
-    county::Union{String,Nothing} = nothing
-)
+    county::Union{String,Nothing} = nothing,
+    output_type::Type{T} = DataFrame
+) where T
     # Check for 2020 1-year ACS restriction
     if year == 2020
         error("""
@@ -150,7 +169,8 @@ function get_acs1(;
         geography = geography,
         year = year,
         state = state,
-        county = county
+        county = county,
+        output_type = output_type
     )
 end
 
@@ -160,8 +180,9 @@ end
         geography::String,
         year::Int = 2013,
         state::Union{String,Nothing} = nothing,
-        county::Union{String,Nothing} = nothing
-    ) -> DataFrame
+        county::Union{String,Nothing} = nothing,
+        output_type::Type{T} = DataFrame
+    ) where T
 
 Fetch estimates from American Community Survey 3-year estimates.
 Only available from 2007-2013 for geographies with populations of 20,000 and greater.
@@ -172,17 +193,26 @@ Only available from 2007-2013 for geographies with populations of 20,000 and gre
 - `year`: Survey year (2007-2013)
 - `state`: Optional state postal code or FIPS code
 - `county`: Optional county FIPS code (requires state)
+- `output_type`: Type of output (DataFrame, StructArray, Vector{NamedTuple}, or NamedTuple{Vector})
 
 # Returns
-DataFrame with requested Census data
+Data in the requested format
 
 # Example
 ```julia
-# Get total population for all states in 2013
+# Get total population for all states in 2013 as a DataFrame
 df = get_acs3(
     variables = ["B01003_001E"],
     geography = "state",
     year = 2013
+)
+
+# Get as a Vector{NamedTuple}
+nts = get_acs3(
+    variables = ["B01003_001E"],
+    geography = "state",
+    year = 2013,
+    output_type = Vector{NamedTuple}
 )
 ```
 """
@@ -191,8 +221,9 @@ function get_acs3(;
     geography::String,
     year::Int = 2013,
     state::Union{String,Nothing} = nothing,
-    county::Union{String,Nothing} = nothing
-)
+    county::Union{String,Nothing} = nothing,
+    output_type::Type{T} = DataFrame
+) where T
     # Validate year range for 3-year ACS
     if year < 2007 || year > 2013
         throw(ArgumentError("3-year ACS is only available from 2007-2013"))
@@ -206,7 +237,8 @@ function get_acs3(;
         geography = geography,
         year = year,
         state = state,
-        county = county
+        county = county,
+        output_type = output_type
     )
 end
 
@@ -217,8 +249,9 @@ end
         year::Int = 2022,
         survey::String = "acs5",
         state::Union{String,Nothing} = nothing,
-        county::Union{String,Nothing} = nothing
-    ) -> DataFrame
+        county::Union{String,Nothing} = nothing,
+        output_type::Type{T} = DataFrame
+    ) where T
 
 Main interface to fetch data from the American Community Survey.
 
@@ -229,17 +262,26 @@ Main interface to fetch data from the American Community Survey.
 - `survey`: Survey type ("acs1", "acs3", or "acs5", default: "acs5")
 - `state`: Optional state postal code or FIPS code
 - `county`: Optional county FIPS code (requires state)
+- `output_type`: Type of output (DataFrame, StructArray, Vector{NamedTuple}, or NamedTuple{Vector})
 
 # Returns
-DataFrame with requested Census data
+Data in the requested format
 
 # Example
 ```julia
-# Get total population for all states using 5-year estimates
+# Get total population for all states using 5-year estimates as a DataFrame
 df = get_acs(
     variables = ["B01003_001E"],
     geography = "state",
     survey = "acs5"
+)
+
+# Get as a StructArray
+sa = get_acs(
+    variables = ["B01003_001E"],
+    geography = "state",
+    survey = "acs5",
+    output_type = StructArray
 )
 ```
 """
@@ -249,8 +291,9 @@ function get_acs(;
     year::Int = 2023,
     survey::String = "acs5",
     state::Union{String,Nothing} = nothing,
-    county::Union{String,Nothing} = nothing
-)
+    county::Union{String,Nothing} = nothing,
+    output_type::Type{T} = DataFrame
+) where T
     # Validate survey type
     if !in(survey, ["acs1", "acs3", "acs5"])
         throw(ArgumentError("Invalid survey type: $survey. Must be 'acs1', 'acs3', or 'acs5'"))
@@ -263,7 +306,8 @@ function get_acs(;
             geography = geography,
             year = year,
             state = state,
-            county = county
+            county = county,
+            output_type = output_type
         )
     elseif survey == "acs3"
         return get_acs3(
@@ -271,7 +315,8 @@ function get_acs(;
             geography = geography,
             year = year,
             state = state,
-            county = county
+            county = county,
+            output_type = output_type
         )
     else  # acs5
         return get_acs5(
@@ -279,7 +324,8 @@ function get_acs(;
             geography = geography,
             year = year,
             state = state,
-            county = county
+            county = county,
+            output_type = output_type
         )
     end
 end 

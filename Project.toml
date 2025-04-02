@@ -1,21 +1,10 @@
 name = "ACS"
-uuid = "1fd1c2f6-8d0c-4e32-b108-6f6336669d7c"
-authors = ["Richard Careaga <public@careaga.net>" ]
-version = "0.1.0"
+uuid = "5cdc1628-db7d-4f1a-9a42-d0831b0d3a5e"
 
 [deps]
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
-
-[compat]
-DataFrames = "1"
-HTTP = "1"
-JSON3 = "1"
-julia = "1.6"
-
-[extras]
-Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-
-[targets]
-docs = ["Documenter"] 
+NamedTupleTools = "d9ec5142-1e00-5aa0-9d6a-321866360f50"
+StructArrays = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
